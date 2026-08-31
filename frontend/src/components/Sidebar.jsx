@@ -1,11 +1,14 @@
 import React from 'react';
-import { Mic, Sparkles, Fingerprint, FileText, Activity, ShieldCheck, Cpu, HardDrive, Zap, Radio, ChevronLeft } from 'lucide-react';
+import { Mic, Sparkles, Fingerprint, FileText, Activity, ShieldCheck, ShieldAlert, Users, Cpu, HardDrive, Zap, Radio, ChevronLeft } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab, sidebarOpen, setSidebarOpen }) {
   if (!sidebarOpen) return null;
 
   const navItems = [
     { id: 'analyzer', label: 'Deepfake & Live Analyzer', icon: Mic, desc: 'Real-time spectral inspection' },
+    { id: 'risk', label: 'Threat Risk Engine', icon: Activity, desc: 'Dynamic multi-vector risk posture' },
+    { id: 'speakers', label: 'Trusted Speakers', icon: Users, desc: 'Biometric voiceprint directory' },
+    { id: 'intent', label: 'Intent & Risk Engine', icon: ShieldAlert, desc: 'Speech ASR & Social engineering risk' },
     { id: 'studio', label: 'Voice Studio & Cloning', icon: Sparkles, desc: 'TTS & Voice cloning workspace' },
     { id: 'watermark', label: 'Watermark Verifier', icon: Fingerprint, desc: 'Steganographic signature scanner' },
     { id: 'reports', label: 'Forensic Reports', icon: FileText, desc: 'Chain of custody audit certificates' }

@@ -1,9 +1,12 @@
 import React from 'react';
-import { ShieldCheck, Mic, Sparkles, Fingerprint, FileText, Activity, Lock, Cpu, Menu, X, LayoutGrid } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, Users, Mic, Sparkles, Fingerprint, FileText, Activity, Lock, Cpu, Menu, X, Bell } from 'lucide-react';
 
-export default function Navbar({ activeTab, setActiveTab, apiStatus, sidebarOpen, setSidebarOpen }) {
+export default function Navbar({ activeTab, setActiveTab, apiStatus, sidebarOpen, setSidebarOpen, onOpenAlertDrawer, alertCount = 2 }) {
   const tabs = [
     { id: 'analyzer', label: 'Deepfake & Live Analyzer', icon: Mic, badge: 'REAL-TIME' },
+    { id: 'risk', label: 'Threat Risk Engine', icon: Activity, badge: 'MULTI-VECTOR' },
+    { id: 'speakers', label: 'Trusted Speakers', icon: Users, badge: 'VOICEPRINT' },
+    { id: 'intent', label: 'Intent & Risk Engine', icon: ShieldAlert, badge: 'ASR+NLP' },
     { id: 'studio', label: 'Voice Studio & Cloning', icon: Sparkles, badge: 'ADMIN' },
     { id: 'watermark', label: 'Watermark Verifier', icon: Fingerprint, badge: 'STEVO' },
     { id: 'reports', label: 'Forensic Reports', icon: FileText, badge: 'AUDIT' }
@@ -46,43 +49,22 @@ export default function Navbar({ activeTab, setActiveTab, apiStatus, sidebarOpen
           </div>
         </div>
 
-        {/* Center Navigation Tabs with Glowing Active Indicators */}
-        <nav className="hidden lg:flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800/90 shadow-inner">
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`relative flex items-center gap-2.5 px-4 py-2 rounded-xl text-xs font-semibold tracking-wide transition-all duration-300 ${
-                  isActive
-                    ? 'bg-slate-950 text-cyan-300 border border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.25)]'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-850/60'
-                }`}
-              >
-                <Icon className={`w-4 h-4 transition-transform ${isActive ? 'text-cyan-400 scale-110' : 'text-slate-400'}`} />
-                <span>{tab.label}</span>
-
-                {tab.badge && (
-                  <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded ${
-                    isActive ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'bg-slate-800 text-slate-400'
-                  }`}>
-                    {tab.badge}
-                  </span>
-                )}
-
-                {/* Glowing Bottom Indicator Bar */}
-                {isActive && (
-                  <span className="absolute bottom-0 left-3 right-3 h-[2px] bg-gradient-to-r from-cyan-400 to-indigo-500 rounded-full shadow-[0_0_8px_#06b6d4]"></span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Right HUD Status Indicators */}
+        {/* Right HUD Status Indicators & Bell Alert Trigger */}
         <div className="flex items-center gap-3 font-mono text-xs">
+          
+          {/* Bell Notification Trigger */}
+          <button
+            onClick={onOpenAlertDrawer}
+            className="relative p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-rose-400 hover:border-rose-500/40 transition-all"
+            title="Open Incident Alerts Stream"
+          >
+            <Bell className="w-4 h-4 text-rose-400" />
+            {alertCount > 0 && (
+              <span className="absolute -top-1 -right-1 px-1.5 py-0.2 text-[9px] font-bold rounded-full bg-rose-500 text-white animate-pulse">
+                {alertCount}
+              </span>
+            )}
+          </button>
           
           <div className="flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800/90">
             <span className={`w-2 h-2 rounded-full ${apiStatus ? 'bg-emerald-400 shadow-[0_0_10px_#10b981] animate-pulse' : 'bg-rose-500'}`}></span>

@@ -2,9 +2,15 @@ import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import AudioAnalyzer from './components/AudioAnalyzer';
+import RiskEngineDashboard from './components/RiskEngineDashboard';
+import SpeakerDirectory from './components/SpeakerDirectory';
+import IntentRiskAnalyzer from './components/IntentRiskAnalyzer';
 import VoiceStudio from './components/VoiceStudio';
 import WatermarkVerifier from './components/WatermarkVerifier';
 import ForensicReports from './components/ForensicReports';
+import SecurityAlertDrawer from './components/SecurityAlertDrawer';
+import StepUpChallengeModal from './components/StepUpChallengeModal';
+import SecurityAlertBanner from './components/SecurityAlertBanner';
 
 const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5050/api' : '/api';
 
@@ -13,6 +19,11 @@ export default function App() {
   const [apiStatus, setApiStatus] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentReportData, setCurrentReportData] = useState(null);
+
+  // Security Alert & Challenge Modal State
+  const [alertDrawerOpen, setAlertDrawerOpen] = useState(false);
+  const [alertCount, setAlertCount] = useState(2);
+  const [challengeData, setChallengeData] = useState(null);
 
   // Check Backend API Connection
   useEffect(() => {
@@ -45,6 +56,8 @@ export default function App() {
         apiStatus={apiStatus}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
+        onOpenAlertDrawer={() => setAlertDrawerOpen(true)}
+        alertCount={alertCount}
       />
 
       {/* Main Content Layout with Optional Sidebar */}
@@ -62,6 +75,18 @@ export default function App() {
         <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 overflow-hidden">
           {activeTab === 'analyzer' && (
             <AudioAnalyzer API_BASE={API_BASE} onNavigateToReport={handleNavigateToReport} />
+          )}
+
+          {activeTab === 'risk' && (
+            <RiskEngineDashboard API_BASE={API_BASE} />
+          )}
+
+          {activeTab === 'speakers' && (
+            <SpeakerDirectory API_BASE={API_BASE} />
+          )}
+
+          {activeTab === 'intent' && (
+            <IntentRiskAnalyzer API_BASE={API_BASE} />
           )}
 
           {activeTab === 'studio' && (
@@ -90,6 +115,32 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* High-Visibility Real-Time Alert Banner Toast */}
+      <SecurityAlertBanner
+        API_BASE={API_BASE}
+        onOpenDrawer={() => setAlertDrawerOpen(true)}
+        onNavigateToReport={() => setActiveTab('reports')}
+      />
+
+      {/* Real-Time Security Alert Notification Drawer */}
+      <SecurityAlertDrawer
+        API_BASE={API_BASE}
+        isOpen={alertDrawerOpen}
+        onClose={() => setAlertDrawerOpen(false)}
+        alertCount={alertCount}
+        setAlertCount={setAlertCount}
+      />
+
+      {/* Step-Up Verification Challenge Modal */}
+      {challengeData && (
+        <StepUpChallengeModal
+          API_BASE={API_BASE}
+          challengeData={challengeData}
+          onClose={() => setChallengeData(null)}
+          onSuccess={() => setChallengeData(null)}
+        />
+      )}
     </div>
   );
 }

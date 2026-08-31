@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Square, Upload, Play, Pause, AlertTriangle, ShieldCheck, ShieldAlert, Sparkles, FileText, Info, RefreshCw, BarChart2, Radio, CheckCircle2 } from 'lucide-react';
+import { Mic, Square, Upload, Play, Pause, AlertTriangle, ShieldCheck, ShieldAlert, Sparkles, FileText, Info, RefreshCw, BarChart2, Radio, CheckCircle2, Trash2 } from 'lucide-react';
 import SpectrogramCanvas from './SpectrogramCanvas';
 
 export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
@@ -13,8 +13,55 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
   const [isPlaying, setIsPlaying] = useState(false);
 
   const [analyzing, setAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState(null);
-  const [selectedSegment, setSelectedSegment] = useState(null);
+
+  // Restore persisted analysis result from localStorage if available
+  const [analysisResult, setAnalysisResult] = useState(() => {
+    try {
+      const saved = localStorage.getItem('voiceguard_latest_analysis_result');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed && parsed.analysisResult ? parsed.analysisResult : parsed;
+      }
+    } catch (e) {
+      console.warn("Failed to load saved analysis result:", e);
+    }
+    return null;
+  });
+
+  const [selectedSegment, setSelectedSegment] = useState(() => {
+    try {
+      const saved = localStorage.getItem('voiceguard_latest_analysis_result');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed ? parsed.selectedSegment : null;
+      }
+    } catch (e) {}
+    return null;
+  });
+
+  const [savedFileName, setSavedFileName] = useState(() => {
+    try {
+      const saved = localStorage.getItem('voiceguard_latest_analysis_result');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed ? parsed.selectedFileName : null;
+      }
+    } catch (e) {}
+    return null;
+  });
+
+  // Speaker Claim State
+  const [speakersList, setSpeakersList] = useState([]);
+  const [claimedSpeakerId, setClaimedSpeakerId] = useState(() => {
+    try {
+      const saved = localStorage.getItem('voiceguard_latest_analysis_result');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed ? parsed.claimedSpeakerId || '' : '';
+      }
+    } catch (e) {}
+    return '';
+  });
 
   // Audio Context & Mic refs
   const audioCtxRef = useRef(null);
@@ -23,25 +70,69 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
   const audioPlayerRef = useRef(null);
   const timerRef = useRef(null);
 
+  // Helper to persist current result state to localStorage
+  const persistAnalysisState = (resultData, segmentData = null, fileNameStr = null) => {
+    try {
+      if (!resultData) {
+        localStorage.removeItem('voiceguard_latest_analysis_result');
+      } else {
+        const payload = {
+          analysisResult: resultData,
+          selectedSegment: segmentData,
+          selectedFileName: fileNameStr || (selectedFile ? selectedFile.name : (resultData.filename || 'inspected_audio.wav')),
+          claimedSpeakerId: claimedSpeakerId || ''
+        };
+        localStorage.setItem('voiceguard_latest_analysis_result', JSON.stringify(payload));
+      }
+    } catch (e) {
+      console.warn("Failed to persist analysis result:", e);
+    }
+  };
+
+  const handleClearResult = () => {
+    setAnalysisResult(null);
+    setSelectedSegment(null);
+    setSelectedFile(null);
+    setAudioUrl(null);
+    setSavedFileName(null);
+    try {
+      localStorage.removeItem('voiceguard_latest_analysis_result');
+    } catch (e) {}
+  };
+
   useEffect(() => {
+    fetch(`${API_BASE}/speakers`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.speakers) {
+          setSpeakersList(data.speakers);
+        }
+      })
+      .catch(() => {});
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, []);
+  }, [API_BASE]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setSelectedFile(file);
+      setSavedFileName(file.name);
       const url = URL.createObjectURL(file);
       setAudioUrl(url);
       setAnalysisResult(null);
       setSelectedSegment(null);
+      runAnalysis(file);
     }
   };
 
+  const [realtimeMetrics, setRealtimeMetrics] = useState(null);
+
   const startRecording = async () => {
     try {
+      setRealtimeMetrics(null);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
       const source = audioCtxRef.current.createMediaStreamSource(stream);
@@ -53,8 +144,29 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
       mediaRecorderRef.current = new MediaRecorder(stream);
       audioChunksRef.current = [];
 
-      mediaRecorderRef.current.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      mediaRecorderRef.current.ondataavailable = async (e) => {
+        if (e.data && e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+
+          // Perform Near-Real-Time Chunk Analysis
+          try {
+            const currentBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
+            const formData = new FormData();
+            formData.append('audio', currentBlob, 'realtime_chunk.wav');
+            if (claimedSpeakerId) formData.append('claimedSpeakerId', claimedSpeakerId);
+            
+            const res = await fetch(`${API_BASE}/analyze-voice`, { method: 'POST', body: formData });
+            const chunkResult = await res.json();
+            if (chunkResult.success) {
+              setRealtimeMetrics({
+                aiProb: chunkResult.ai_probability,
+                humanProb: chunkResult.human_probability,
+                prediction: chunkResult.prediction,
+                score: chunkResult.confidenceScore || Math.round(chunkResult.ai_probability * 100)
+              });
+            }
+          } catch (err) {}
+        }
       };
 
       mediaRecorderRef.current.onstop = async () => {
@@ -67,7 +179,7 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
         await runAnalysis(file);
       };
 
-      mediaRecorderRef.current.start();
+      mediaRecorderRef.current.start(1000); // 1-second timeslice for Near Real-Time updates
       setIsRecording(true);
       setRecordingTime(0);
 
@@ -92,8 +204,6 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
 
   const runAnalysis = async (fileToAnalyze = selectedFile, forceOption = null) => {
     setAnalyzing(true);
-    setAnalysisResult(null);
-    setSelectedSegment(null);
 
     const formData = new FormData();
     if (fileToAnalyze) {
@@ -104,6 +214,7 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
 
     if (forceOption === 'deepfake') formData.append('forceDeepfake', 'true');
     if (forceOption === 'authentic') formData.append('forceAuthentic', 'true');
+    if (claimedSpeakerId) formData.append('claimedSpeakerId', claimedSpeakerId);
 
     try {
       const res = await fetch(`${API_BASE}/analyze`, {
@@ -112,11 +223,18 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
       });
       const data = await res.json();
       if (data.success) {
-        setAnalysisResult(data.data);
-        if (data.data.segmentHeatmap && data.data.segmentHeatmap.length > 0) {
-          const highRisk = data.data.segmentHeatmap.find(s => s.status === 'HIGH_RISK');
-          setSelectedSegment(highRisk || data.data.segmentHeatmap[0]);
+        const newResult = data.data;
+        setAnalysisResult(newResult);
+        let defaultSeg = null;
+        if (newResult.segmentHeatmap && newResult.segmentHeatmap.length > 0) {
+          const highRisk = newResult.segmentHeatmap.find(s => s.status === 'HIGH_RISK');
+          defaultSeg = highRisk || newResult.segmentHeatmap[0];
         }
+        setSelectedSegment(defaultSeg);
+        const fileNameStr = fileToAnalyze ? fileToAnalyze.name : (newResult.filename || 'inspected_audio.wav');
+        setSavedFileName(fileNameStr);
+
+        persistAnalysisState(newResult, defaultSeg, fileNameStr);
       } else {
         alert('Analysis Error: ' + data.error);
       }
@@ -185,7 +303,7 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
               <label className="w-full sm:w-auto flex-1 cursor-pointer flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl border-2 border-dashed border-slate-700 hover:border-cyan-400 bg-slate-950/80 hover:bg-slate-900 transition-all duration-200 group">
                 <Upload className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
                 <span className="text-xs font-mono text-slate-300 truncate max-w-xs">
-                  {selectedFile ? selectedFile.name : 'Select or Drag Audio File (WAV, MP3, WebM)'}
+                  {selectedFile ? selectedFile.name : (savedFileName || 'Select or Drag Audio File (WAV, MP3, WebM)')}
                 </span>
                 <input type="file" accept="audio/*" onChange={handleFileChange} className="hidden" />
               </label>
@@ -224,39 +342,82 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
               )}
 
               {isRecording && (
-                <div className="flex items-center gap-2 text-xs font-mono text-rose-400 bg-rose-950/60 px-4 py-3 rounded-xl border border-rose-800/60">
-                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
-                  <span>STREAMING MIC DATA...</span>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 text-xs font-mono text-rose-400 bg-rose-950/60 px-4 py-3 rounded-xl border border-rose-800/60">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                    <span>Near Real-Time Analysis:</span>
+                  </div>
+                  {realtimeMetrics ? (
+                    <div className="flex items-center gap-2 text-cyan-300 font-bold">
+                      <span>P(AI): {(realtimeMetrics.aiProb * 100).toFixed(1)}%</span>
+                      <span>•</span>
+                      <span>P(Human): {(realtimeMetrics.humanProb * 100).toFixed(1)}%</span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] ${realtimeMetrics.prediction === 'AI_GENERATED' ? 'bg-rose-900 text-rose-300' : 'bg-emerald-900 text-emerald-300'}`}>
+                        {realtimeMetrics.prediction}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-slate-400">Capturing audio chunks...</span>
+                  )}
                 </div>
               )}
             </div>
           )}
 
           {/* Quick Demos & Run Button */}
-          <div className="lg:col-span-4 flex items-center justify-end gap-2.5 font-mono text-xs">
-            <button
-              onClick={() => runAnalysis(null, 'deepfake')}
-              disabled={analyzing}
-              className="px-3 py-2.5 rounded-xl bg-rose-950/80 hover:bg-rose-900/90 text-rose-300 border border-rose-800/80 transition-all hover:scale-[1.02]"
-            >
-              Demo Synthetic
-            </button>
-            <button
-              onClick={() => runAnalysis(null, 'authentic')}
-              disabled={analyzing}
-              className="px-3 py-2.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900/90 text-emerald-300 border border-emerald-800/80 transition-all hover:scale-[1.02]"
-            >
-              Demo Authentic
-            </button>
-            
-            <button
-              onClick={() => runAnalysis()}
-              disabled={analyzing || (!selectedFile && mode === 'upload')}
-              className="flex items-center gap-2 px-5 py-3.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold tracking-wider shadow-[0_0_20px_rgba(6,182,212,0.35)] transition-all hover:scale-[1.02] disabled:opacity-50"
-            >
-              {analyzing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-              <span>{analyzing ? 'Inspecting...' : 'Analyze Audio'}</span>
-            </button>
+          <div className="lg:col-span-4 flex flex-col sm:flex-row items-center justify-end gap-2.5 font-mono text-xs">
+            <div className="flex items-center gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800 w-full sm:w-auto">
+              <span className="text-[10px] text-slate-400 uppercase tracking-wider pl-1">Claim:</span>
+              <select
+                value={claimedSpeakerId}
+                onChange={(e) => setClaimedSpeakerId(e.target.value)}
+                className="bg-transparent text-cyan-300 font-bold text-xs focus:outline-none max-w-[170px] truncate"
+              >
+                <option value="" className="bg-slate-950 text-slate-400">Optional Speaker</option>
+                {speakersList.map((s) => (
+                  <option key={s.speaker_id} value={s.speaker_id} className="bg-slate-950 text-slate-200">
+                    {s.name} ({s.speaker_id})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <button
+                onClick={() => runAnalysis(null, 'deepfake')}
+                disabled={analyzing}
+                className="px-3 py-2.5 rounded-xl bg-rose-950/80 hover:bg-rose-900/90 text-rose-300 border border-rose-800/80 transition-all hover:scale-[1.02]"
+              >
+                Demo Synthetic
+              </button>
+              <button
+                onClick={() => runAnalysis(null, 'authentic')}
+                disabled={analyzing}
+                className="px-3 py-2.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900/90 text-emerald-300 border border-emerald-800/80 transition-all hover:scale-[1.02]"
+              >
+                Demo Authentic
+              </button>
+              
+              <button
+                onClick={() => runAnalysis()}
+                disabled={analyzing || (!selectedFile && mode === 'upload')}
+                className="flex items-center gap-2 px-5 py-3.5 rounded-xl bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold tracking-wider shadow-[0_0_20px_rgba(6,182,212,0.35)] transition-all hover:scale-[1.02] disabled:opacity-50"
+              >
+                {analyzing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                <span>{analyzing ? 'Inspecting...' : 'Analyze Audio'}</span>
+              </button>
+
+              {analysisResult && (
+                <button
+                  onClick={handleClearResult}
+                  title="Remove saved analysis result"
+                  className="px-3 py-2.5 rounded-xl bg-slate-950 hover:bg-slate-900 text-rose-400 border border-slate-800 hover:border-rose-700 transition-all flex items-center gap-1.5 font-mono text-xs"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Clear</span>
+                </button>
+              )}
+            </div>
           </div>
 
         </div>
@@ -348,6 +509,34 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
               </div>
             </div>
 
+            {/* Optional Speaker Biometric Verification Result Card */}
+            {analysisResult.speakerVerification && (
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800/90 space-y-2 font-mono text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">SPEAKER IDENTITY MATCH</span>
+                  <span className={`font-bold ${analysisResult.speakerVerification.severity === 'success' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {analysisResult.speakerVerification.match_percentage}% Cosine Match
+                  </span>
+                </div>
+
+                <div className={`p-3 rounded-xl border text-xs flex items-center gap-2.5 ${
+                  analysisResult.speakerVerification.severity === 'success'
+                    ? 'bg-emerald-950/40 border-emerald-800/80 text-emerald-300'
+                    : analysisResult.speakerVerification.severity === 'warning'
+                    ? 'bg-amber-950/40 border-amber-800/80 text-amber-300'
+                    : 'bg-rose-950/40 border-rose-800/80 text-rose-300'
+                }`}>
+                  <ShieldCheck className="w-4 h-4 shrink-0" />
+                  <div>
+                    <span className="font-bold block text-xs">{analysisResult.speakerVerification.status_text}</span>
+                    <span className="text-[10px] text-slate-300 font-sans block">
+                      Claimed: {analysisResult.speakerVerification.claimed_speaker?.name} ({analysisResult.speakerVerification.claimed_speaker?.speaker_id})
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Narrative Explanation */}
             <div className="text-xs text-slate-300 bg-slate-950/80 p-4 rounded-xl border border-slate-800 space-y-1">
               <div className="font-semibold text-cyan-400 font-mono flex items-center gap-1.5 mb-1">
@@ -357,14 +546,57 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
               <p className="leading-relaxed text-slate-300">{analysisResult.explanationSummary}</p>
             </div>
 
-            {/* Button */}
-            <button
-              onClick={() => onNavigateToReport(analysisResult)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-700 text-xs font-mono font-bold text-slate-200 hover:border-cyan-400 transition-all"
-            >
-              <FileText className="w-4 h-4 text-cyan-400" />
-              <span>Open Chain of Custody Report</span>
-            </button>
+            {/* Dynamic Security Insights Card */}
+            {(analysisResult.evidence || analysisResult.recommendations) && (
+              <div className="cyber-panel p-4 bg-slate-950/90 border border-slate-800 rounded-xl space-y-3 font-mono text-xs">
+                <div className="font-semibold text-amber-400 flex items-center gap-2 border-b border-slate-800 pb-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                  SECURITY INSIGHTS & EVIDENCE
+                </div>
+
+                {analysisResult.evidence && analysisResult.evidence.length > 0 && (
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] text-slate-400 font-bold block">DETECTED EVIDENCE:</span>
+                    {analysisResult.evidence.map((ev, i) => (
+                      <div key={i} className="flex items-start gap-2 text-slate-200 text-xs">
+                        <span className="text-amber-400 font-bold">✓</span>
+                        <span>{ev.text || ev}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {analysisResult.recommendations && analysisResult.recommendations.length > 0 && (
+                  <div className="space-y-1.5 pt-2 border-t border-slate-900">
+                    <span className="text-[11px] text-slate-400 font-bold block">RECOMMENDED ACTIONS:</span>
+                    {analysisResult.recommendations.map((rec, i) => (
+                      <div key={i} className="text-slate-300 text-xs pl-2 border-l-2 border-cyan-500">
+                        {rec}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => onNavigateToReport(analysisResult)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-700 text-xs font-mono font-bold text-slate-200 hover:border-cyan-400 transition-all"
+              >
+                <FileText className="w-4 h-4 text-cyan-400" />
+                <span>Open Chain of Custody Report</span>
+              </button>
+              <button
+                onClick={handleClearResult}
+                title="Clear persisted analysis result"
+                className="px-4 py-3 rounded-xl bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-rose-700 text-xs font-mono text-rose-400 transition-all flex items-center gap-1.5 font-bold"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Clear</span>
+              </button>
+            </div>
 
           </div>
 
