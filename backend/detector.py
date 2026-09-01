@@ -9,7 +9,7 @@ import scipy.special
 import soundfile as sf
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger("VoiceGuardDetector")
+logger = logging.getLogger("TRUETONEDetector")
 
 try:
     import torch

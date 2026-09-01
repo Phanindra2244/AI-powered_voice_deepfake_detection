@@ -27,23 +27,17 @@ export default function Navbar({ activeTab, setActiveTab, apiStatus, sidebarOpen
           </button>
 
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-purple-600 p-[1.5px] shadow-lg shadow-cyan-500/25">
-              <div className="w-full h-full bg-slate-950 rounded-[10.5px] flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5 text-cyan-400" />
-              </div>
-            </div>
-
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-lg font-black tracking-wider text-white font-mono">
-                  VOICEGUARD<span className="text-cyan-400">.SOC</span>
+                  TRUETONE
                 </span>
                 <span className="px-2 py-0.5 text-[10px] font-bold tracking-widest font-mono rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80 uppercase shadow-inner">
-                  ENTERPRISE v2.4
+                  CLASSIC v2.4
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 tracking-tight hidden sm:block">
-                Cybersecurity Operations Center • Deepfake Forensics & Steganography Engine
+                Enterprise Voice Security & Forensic Intelligence Platform
               </p>
             </div>
           </div>

@@ -17,7 +17,7 @@ warnings.filterwarnings("ignore")
 
 import logging
 logging.basicConfig(level=logging.ERROR, stream=sys.stderr)
-logger = logging.getLogger("VoiceGuardIntentAnalyzer")
+logger = logging.getLogger("TRUETONEIntentAnalyzer")
 
 for lib in ["transformers", "httpx", "urllib3", "huggingface_hub", "torch"]:
     logging.getLogger(lib).setLevel(logging.ERROR)

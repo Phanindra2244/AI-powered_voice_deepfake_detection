@@ -25,7 +25,7 @@ app.use('/api', apiRoutes);
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ONLINE',
-    service: 'VoiceGuard AI Deepfake & Audio Security API',
+    service: 'TRUETONE AI Deepfake & Audio Security API',
     timestamp: new Date().toISOString(),
     version: '2.4.0'
   });
@@ -41,14 +41,14 @@ app.get('*', (req, res) => {
   }
   res.sendFile(path.join(frontendDistPath, 'index.html'), (err) => {
     if (err) {
-      res.send('VoiceGuard Backend API is running on Port ' + PORT);
+      res.send('TRUETONE Backend API is running on Port ' + PORT);
     }
   });
 });
 
 app.listen(PORT, () => {
   console.log(`====================================================`);
-  console.log(`🛡️ VOICEGUARD AI SECURITY BACKEND RUNNING ON PORT ${PORT}`);
+  console.log(`🛡️ TRUETONE AI SECURITY BACKEND RUNNING ON PORT ${PORT}`);
   console.log(`📡 API Endpoints: http://localhost:${PORT}/api/health`);
   console.log(`====================================================`);
 });

@@ -692,7 +692,7 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
                 <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex justify-between items-center">
                   <div>
                     <span className="text-slate-400 block text-[11px]">Digital Watermark Scan</span>
-                    <span className="text-slate-300 text-[10px]">VoiceGuard signature</span>
+                    <span className="text-slate-300 text-[10px]">TRUETONE signature</span>
                   </div>
                   <span className={`font-bold text-[10px] px-2 py-0.5 rounded border ${
                     analysisResult.watermark?.found ? 'bg-rose-950/80 text-rose-300 border-rose-800' : 'bg-slate-900 text-slate-400 border-slate-800'

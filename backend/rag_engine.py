@@ -15,7 +15,7 @@ warnings.filterwarnings("ignore")
 
 import logging
 logging.basicConfig(level=logging.ERROR, stream=sys.stderr)
-logger = logging.getLogger("VoiceGuardRAG")
+logger = logging.getLogger("TRUETONERAG")
 
 for lib in ["transformers", "httpx", "urllib3", "torch"]:
     logging.getLogger(lib).setLevel(logging.ERROR)

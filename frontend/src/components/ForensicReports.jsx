@@ -267,7 +267,7 @@ export default function ForensicReports({ API_BASE, currentReportData }) {
               <span className="text-cyan-400 font-bold break-all">{reportRecord.digitalSealSignature}</span>
             </div>
             <div className="text-right text-slate-500 text-[11px]">
-              VoiceGuard AI Neural Forensics Lab • Cryptographically Sealed
+              TRUETONE AI Neural Forensics Lab • Cryptographically Sealed
             </div>
           </div>
 

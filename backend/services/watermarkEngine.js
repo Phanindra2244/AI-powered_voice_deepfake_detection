@@ -11,14 +11,14 @@ const SECRET_KEY = 'VoiceGuard-Security-Key-2026-SuperSecretKey';
 
 export function createWatermarkPayload(metadata) {
   const payload = {
-    platform: 'VoiceGuard AI Security Studio',
+    platform: 'TRUETONE AI Security Studio',
     version: '2.4.0',
     timestamp: metadata.timestamp || new Date().toISOString(),
     voiceId: metadata.voiceId || 'persona-synth-01',
     textPrompt: metadata.textPrompt || '',
     textHash: crypto.createHash('sha256').update(metadata.textPrompt || '').digest('hex').substring(0, 16),
     creator: metadata.creator || 'Admin Examiner',
-    watermarkId: 'VG-' + Math.random().toString(36).substring(2, 10).toUpperCase(),
+    watermarkId: 'TT-' + Math.random().toString(36).substring(2, 10).toUpperCase(),
   };
 
   // Sign payload

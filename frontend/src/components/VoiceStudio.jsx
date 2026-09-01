@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Sparkles, Mic, Play, Pause, Download, Fingerprint, RefreshCw, Upload, CheckCircle2, Volume2, ShieldCheck, Lock } from 'lucide-react';
 
 export default function VoiceStudio({ API_BASE, onVoiceGenerated }) {
-  const [promptText, setPromptText] = useState('VoiceGuard AI security validation audio. This voice synthesis clip is protected with an embedded digital watermark signature.');
+  const [promptText, setPromptText] = useState('TRUETONE AI security validation audio. This voice synthesis clip is protected with an embedded digital watermark signature.');
   const [selectedVoice, setSelectedVoice] = useState('synth-adam');
   const [pitch, setPitch] = useState(180);
   const [speed, setSpeed] = useState(1.0);
@@ -146,7 +146,7 @@ export default function VoiceStudio({ API_BASE, onVoiceGenerated }) {
           <div className="flex flex-wrap gap-2 text-xs font-mono">
             <span className="text-slate-500 self-center">Presets:</span>
             <button
-              onClick={() => setPromptText("Security Notice: This is an automated VoiceGuard synthetic audio verification broadcast.")}
+              onClick={() => setPromptText("Security Notice: This is an automated TRUETONE synthetic audio verification broadcast.")}
               className="px-3 py-1 rounded-lg bg-slate-950 text-slate-300 hover:text-cyan-300 border border-slate-800 hover:border-cyan-500/40 transition-colors"
             >
               Security Notice

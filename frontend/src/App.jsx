@@ -108,7 +108,7 @@ export default function App() {
         <div className="max-w-[1700px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-            <span>VOICEGUARD CYBERSECURITY SOC • NEURAL SPECTRAL ENGINE v2.4</span>
+            <span>TRUETONE CLASSIC SECURITY SOC • NEURAL SPECTRAL ENGINE v2.4</span>
           </div>
           <div className="text-slate-400">
             Real-Time Audio Analysis • Steganographic Provenance • SHA-256 Chain of Custody

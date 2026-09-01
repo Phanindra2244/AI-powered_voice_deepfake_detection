@@ -10,7 +10,7 @@ import datetime
 import urllib.request
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger("VoiceGuardAlertService")
+logger = logging.getLogger("TRUETONEAlertService")
 
 # SQLite Database File Path
 DB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")

@@ -64,7 +64,7 @@ export default function WatermarkVerifier({ API_BASE }) {
               <h2 className="text-xl font-bold text-white">Digital Watermark & Source Provenance Scanner</h2>
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              Verify whether an audio clip was produced by VoiceGuard AI Studio by extracting steganographic metadata signatures.
+              Verify whether an audio clip was produced by TRUETONE AI Studio by extracting steganographic metadata signatures.
             </p>
           </div>
 
@@ -167,7 +167,7 @@ export default function WatermarkVerifier({ API_BASE }) {
             </div>
           ) : (
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs text-slate-400 font-mono">
-              <p>Reason: {verificationResult.reason || 'This audio clip does not contain VoiceGuard steganographic watermark headers.'}</p>
+              <p>Reason: {verificationResult.reason || 'This audio clip does not contain TRUETONE steganographic watermark headers.'}</p>
             </div>
           )}
 
