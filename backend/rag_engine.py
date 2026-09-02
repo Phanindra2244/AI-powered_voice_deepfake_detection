@@ -47,6 +47,7 @@ class VectorRAGEngine:
 
         self.encoder_checked = True
         try:
+            # pyrefly: ignore [missing-import]
             from sentence_transformers import SentenceTransformer
             self.encoder = SentenceTransformer("all-MiniLM-L6-v2")
         except Exception:

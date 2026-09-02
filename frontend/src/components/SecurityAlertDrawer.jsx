@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Bell, X, AlertTriangle, CheckCircle2, RefreshCw, ChevronRight, Eye, ShieldCheck, Zap, Filter, Edit3 } from 'lucide-react';
+import { safeFetch } from '../services/api';
 
 export default function SecurityAlertDrawer({ API_BASE, isOpen, onClose, alertCount, setAlertCount }) {
   const [activeTab, setActiveTab] = useState('incidents'); // 'incidents' | 'rag'
@@ -21,12 +22,11 @@ export default function SecurityAlertDrawer({ API_BASE, isOpen, onClose, alertCo
     if (!ragQuery.trim()) return;
     setRagLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/rag/query`, {
+      const data = await safeFetch(`${API_BASE}/rag/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: ragQuery.trim() })
       });
-      const data = await res.json();
       setRagResult(data);
     } catch (err) {
       setRagResult({
@@ -41,8 +41,7 @@ export default function SecurityAlertDrawer({ API_BASE, isOpen, onClose, alertCo
 
   const fetchKBDocuments = async () => {
     try {
-      const res = await fetch(`${API_BASE}/rag/documents`);
-      const data = await res.json();
+      const data = await safeFetch(`${API_BASE}/rag/documents`);
       if (data.success) setKbDocs(data.documents || []);
     } catch (e) {}
   };
@@ -54,8 +53,7 @@ export default function SecurityAlertDrawer({ API_BASE, isOpen, onClose, alertCo
       if (filterSeverity !== 'ALL') url += `&severity=${filterSeverity}`;
       if (filterStatus !== 'ALL') url += `&status=${filterStatus}`;
 
-      const res = await fetch(url);
-      const data = await res.json();
+      const data = await safeFetch(url);
       if (data.success && data.incidents) {
         setIncidents(data.incidents);
         const unhandled = data.incidents.filter(i => i.status === 'NEW').length;
@@ -103,12 +101,11 @@ export default function SecurityAlertDrawer({ API_BASE, isOpen, onClose, alertCo
 
   const handleUpdateStatus = async (incidentId, newStatus, notes = '') => {
     try {
-      const res = await fetch(`${API_BASE}/incidents/${incidentId}/status`, {
+      const data = await safeFetch(`${API_BASE}/incidents/${incidentId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus, analyst_notes: notes })
       });
-      const data = await res.json();
       if (data.success && data.data) {
         setIncidents((prev) => prev.map(i => i.incident_id === incidentId ? data.data : i));
         setEditingNotesId(null);

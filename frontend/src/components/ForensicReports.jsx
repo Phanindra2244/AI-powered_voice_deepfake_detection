@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Download, Printer, ShieldCheck, CheckCircle2, Clock, FileCheck, RefreshCw } from 'lucide-react';
+import { safeFetch, safeFetchRaw } from '../services/api';
 
 export default function ForensicReports({ API_BASE, currentReportData }) {
   const [reportRecord, setReportRecord] = useState(null);
@@ -31,7 +32,7 @@ export default function ForensicReports({ API_BASE, currentReportData }) {
   const fetchReportRecord = async (analysisData) => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/forensic-report?t=${Date.now()}`, {
+      const data = await safeFetch(`${API_BASE}/forensic-report?t=${Date.now()}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -40,7 +41,6 @@ export default function ForensicReports({ API_BASE, currentReportData }) {
         },
         body: JSON.stringify({ analysisData, examiner: 'Lead Forensic Audio Examiner' })
       });
-      const data = await res.json();
       if (data.success) {
         setReportRecord(data.reportRecord);
       }
@@ -73,7 +73,7 @@ export default function ForensicReports({ API_BASE, currentReportData }) {
       } : {});
 
       // Send POST request with cache-busting timestamp & no-cache headers
-      const res = await fetch(`${API_BASE}/forensic-pdf?t=${cacheBustTimestamp}`, {
+      const res = await safeFetchRaw(`${API_BASE}/forensic-pdf?t=${cacheBustTimestamp}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -87,10 +87,6 @@ export default function ForensicReports({ API_BASE, currentReportData }) {
           examiner: reportRecord?.examiner || 'Senior Forensic Audio Analyst'
         })
       });
-
-      if (!res.ok) {
-        throw new Error(`Server returned status ${res.status}`);
-      }
 
       // Extract unique filename from Content-Disposition header if present
       let downloadFilename = `Forensic_Report_${reportRecord?.caseId || 'VG'}_${cacheBustTimestamp}.pdf`;

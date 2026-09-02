@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ShieldAlert, ShieldCheck, Mic, Square, RefreshCw, Key, Clock, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { safeFetch } from '../services/api';
 
 export default function StepUpChallengeModal({ API_BASE, challengeData, onClose, onSuccess }) {
   const [activeTab, setActiveTab] = useState('voice'); // 'voice' | 'otp'
@@ -76,7 +77,7 @@ export default function StepUpChallengeModal({ API_BASE, challengeData, onClose,
     const inputVal = activeTab === 'voice' ? (spokenText || challenge.passphrase) : otpInput;
 
     try {
-      const res = await fetch(`${API_BASE}/challenges/verify`, {
+      const data = await safeFetch(`${API_BASE}/challenges/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -85,7 +86,6 @@ export default function StepUpChallengeModal({ API_BASE, challengeData, onClose,
           target_identity: challengeData?.target_identity || 'John Doe (CFO)'
         })
       });
-      const data = await res.json();
       if (data.success) {
         setResult(data.data);
         if (data.data.verified && onSuccess) {

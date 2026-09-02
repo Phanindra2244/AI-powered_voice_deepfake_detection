@@ -5,6 +5,7 @@ import {
   Radio, CheckCircle2, ChevronRight, Eye, Code, Zap, AlertCircle, Info,
   Plus, Trash2, X
 } from 'lucide-react';
+import { safeFetch } from '../services/api';
 
 const DEFAULT_INTENT_SCENARIOS = [
   {
@@ -219,11 +220,10 @@ export default function IntentRiskAnalyzer({ API_BASE }) {
     formData.append('callChannel', callChannel);
 
     try {
-      const res = await fetch(`${API_BASE}/analyze-intent`, {
+      const data = await safeFetch(`${API_BASE}/analyze-intent`, {
         method: 'POST',
         body: formData
       });
-      const data = await res.json();
       if (data.success) {
         const payloadData = data.data || data;
         const intentObj = {

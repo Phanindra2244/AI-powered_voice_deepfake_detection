@@ -11,8 +11,7 @@ import ForensicReports from './components/ForensicReports';
 import SecurityAlertDrawer from './components/SecurityAlertDrawer';
 import StepUpChallengeModal from './components/StepUpChallengeModal';
 import SecurityAlertBanner from './components/SecurityAlertBanner';
-
-const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5050/api' : '/api';
+import { API_BASE, safeFetch } from './services/api';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('analyzer');
@@ -29,9 +28,9 @@ export default function App() {
   useEffect(() => {
     const checkApi = async () => {
       try {
-        const res = await fetch(`${API_BASE}/health`);
-        const data = await res.json();
-        if (data.status === 'ONLINE') setApiStatus(true);
+        const data = await safeFetch(`${API_BASE}/health`);
+        if (data && (data.status === 'ONLINE' || data.status === 'ok')) setApiStatus(true);
+        else setApiStatus(false);
       } catch (err) {
         setApiStatus(false);
       }

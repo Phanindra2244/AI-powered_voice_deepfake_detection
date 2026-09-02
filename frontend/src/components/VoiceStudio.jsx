@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Sparkles, Mic, Play, Pause, Download, Fingerprint, RefreshCw, Upload, CheckCircle2, Volume2, ShieldCheck, Lock } from 'lucide-react';
+import { safeFetch } from '../services/api';
 
 export default function VoiceStudio({ API_BASE, onVoiceGenerated }) {
   const [promptText, setPromptText] = useState('TRUETONE AI security validation audio. This voice synthesis clip is protected with an embedded digital watermark signature.');
@@ -46,11 +47,10 @@ export default function VoiceStudio({ API_BASE, onVoiceGenerated }) {
     formData.append('referenceAudio', referenceFile);
 
     try {
-      const res = await fetch(`${API_BASE}/clone-voice`, {
+      const data = await safeFetch(`${API_BASE}/clone-voice`, {
         method: 'POST',
         body: formData
       });
-      const data = await res.json();
       if (data.success) {
         setClonedProfile(data.cloneProfile);
         setCloneMode(true);
@@ -71,7 +71,7 @@ export default function VoiceStudio({ API_BASE, onVoiceGenerated }) {
     setGeneratedAudio(null);
 
     try {
-      const res = await fetch(`${API_BASE}/generate-voice`, {
+      const data = await safeFetch(`${API_BASE}/generate-voice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -82,7 +82,6 @@ export default function VoiceStudio({ API_BASE, onVoiceGenerated }) {
           cloneProfile: cloneMode ? clonedProfile : null
         })
       });
-      const data = await res.json();
       if (data.success) {
         setGeneratedAudio(data.audioBase64);
         setGeneratedMetadata(data.metadata);

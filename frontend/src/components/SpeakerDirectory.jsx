@@ -3,6 +3,7 @@ import {
   Users, UserPlus, ShieldCheck, ShieldAlert, AlertTriangle, Mic, Square, Upload,
   Play, Pause, RefreshCw, CheckCircle2, Search, UserCheck, Key, Cpu, Sparkles, Activity
 } from 'lucide-react';
+import { safeFetch } from '../services/api';
 
 export default function SpeakerDirectory({ API_BASE }) {
   const [speakers, setSpeakers] = useState([]);
@@ -37,8 +38,7 @@ export default function SpeakerDirectory({ API_BASE }) {
   const fetchSpeakers = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/speakers`);
-      const data = await res.json();
+      const data = await safeFetch(`${API_BASE}/speakers`);
       if (data.success) {
         setSpeakers(data.speakers);
         if (data.speakers.length > 0 && !verifySpeakerId) {
@@ -74,11 +74,10 @@ export default function SpeakerDirectory({ API_BASE }) {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/speakers/enroll`, {
+      const data = await safeFetch(`${API_BASE}/speakers/enroll`, {
         method: 'POST',
         body: formData
       });
-      const data = await res.json();
       if (data.success) {
         alert(`Speaker ${enrollName} enrolled successfully!`);
         setShowEnrollModal(false);
@@ -154,11 +153,10 @@ export default function SpeakerDirectory({ API_BASE }) {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/speakers/verify`, {
+      const data = await safeFetch(`${API_BASE}/speakers/verify`, {
         method: 'POST',
         body: formData
       });
-      const data = await res.json();
       if (data.success) {
         setVerifyResult(data.data);
       } else {

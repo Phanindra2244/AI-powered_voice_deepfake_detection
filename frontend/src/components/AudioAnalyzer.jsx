@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, Square, Upload, Play, Pause, AlertTriangle, ShieldCheck, ShieldAlert, Sparkles, FileText, Info, RefreshCw, BarChart2, Radio, CheckCircle2, Trash2 } from 'lucide-react';
 import SpectrogramCanvas from './SpectrogramCanvas';
+import { safeFetch } from '../services/api';
 
 export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
   const [mode, setMode] = useState('upload'); // 'upload' | 'live'
@@ -101,8 +102,7 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
   };
 
   useEffect(() => {
-    fetch(`${API_BASE}/speakers`)
-      .then((res) => res.json())
+    safeFetch(`${API_BASE}/speakers`)
       .then((data) => {
         if (data.success && data.speakers) {
           setSpeakersList(data.speakers);
@@ -155,8 +155,7 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
             formData.append('audio', currentBlob, 'realtime_chunk.wav');
             if (claimedSpeakerId) formData.append('claimedSpeakerId', claimedSpeakerId);
             
-            const res = await fetch(`${API_BASE}/analyze-voice`, { method: 'POST', body: formData });
-            const chunkResult = await res.json();
+            const chunkResult = await safeFetch(`${API_BASE}/analyze-voice`, { method: 'POST', body: formData });
             if (chunkResult.success) {
               setRealtimeMetrics({
                 aiProb: chunkResult.ai_probability,
@@ -217,11 +216,10 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
     if (claimedSpeakerId) formData.append('claimedSpeakerId', claimedSpeakerId);
 
     try {
-      const res = await fetch(`${API_BASE}/analyze`, {
+      const data = await safeFetch(`${API_BASE}/analyze`, {
         method: 'POST',
         body: formData
       });
-      const data = await res.json();
       if (data.success) {
         const newResult = data.data;
         setAnalysisResult(newResult);

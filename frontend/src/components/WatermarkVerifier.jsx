@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Fingerprint, Upload, CheckCircle2, AlertOctagon, HelpCircle, RefreshCw, Lock, Key } from 'lucide-react';
+import { safeFetch } from '../services/api';
 import confetti from 'canvas-confetti';
 
 export default function WatermarkVerifier({ API_BASE }) {
@@ -28,11 +29,10 @@ export default function WatermarkVerifier({ API_BASE }) {
     formData.append('audio', selectedFile);
 
     try {
-      const res = await fetch(`${API_BASE}/verify-watermark`, {
+      const data = await safeFetch(`${API_BASE}/verify-watermark`, {
         method: 'POST',
         body: formData
       });
-      const data = await res.json();
       if (data.success) {
         setVerificationResult(data.verification);
         if (data.verification.found && data.verification.verified) {

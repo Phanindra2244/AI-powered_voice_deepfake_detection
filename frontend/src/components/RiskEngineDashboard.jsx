@@ -4,6 +4,7 @@ import {
   RefreshCw, CheckCircle2, AlertCircle, ArrowUpRight, Lock, DollarSign,
   PhoneCall, Mic, Info, BarChart3, Layers, Plus, Trash2, X
 } from 'lucide-react';
+import { safeFetch } from '../services/api';
 
 const DEFAULT_PRESET_SCENARIOS = [
   { id: 'scen-1', title: '🚨 Critical Wire Fraud (₹50k)', df: 94, spkSim: 0.15, intent: 90, ch: 'Inbound VoIP / Untrusted Gateway', amt: 50000, theme: 'rose' },
@@ -102,7 +103,7 @@ export default function RiskEngineDashboard({ API_BASE }) {
     if (isHighOrCritical) {
       try {
         const endpoint = API_BASE ? `${API_BASE}/incidents` : '/api/incidents';
-        await fetch(endpoint, {
+        await safeFetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -121,7 +122,7 @@ export default function RiskEngineDashboard({ API_BASE }) {
   const evaluateRisk = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/risk/evaluate`, {
+      const data = await safeFetch(`${API_BASE}/risk/evaluate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -132,7 +133,6 @@ export default function RiskEngineDashboard({ API_BASE }) {
           transactionAmount: transactionAmount
         })
       });
-      const data = await res.json();
       
       if (data && data.success && data.data) {
         setRiskData(data.data);

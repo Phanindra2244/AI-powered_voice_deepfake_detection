@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, AlertTriangle, CheckCircle2, X, Eye, Zap, Lock, Volume2 } from 'lucide-react';
+import { safeFetch } from '../services/api';
 
 export default function SecurityAlertBanner({ API_BASE, onOpenDrawer, onNavigateToReport }) {
   const [activeAlert, setActiveAlert] = useState(null);
@@ -59,7 +60,7 @@ export default function SecurityAlertBanner({ API_BASE, onOpenDrawer, onNavigate
 
   const handleAcknowledge = async (id) => {
     try {
-      await fetch(`${API_BASE}/incidents/${id}/status`, {
+      await safeFetch(`${API_BASE}/incidents/${id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'ACKNOWLEDGED', analyst_notes: 'Acknowledged via real-time SOC alert banner.' })
@@ -70,7 +71,7 @@ export default function SecurityAlertBanner({ API_BASE, onOpenDrawer, onNavigate
 
   const handleBlockCaller = async (id) => {
     try {
-      await fetch(`${API_BASE}/incidents/${id}/status`, {
+      await safeFetch(`${API_BASE}/incidents/${id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'RESOLVED', analyst_notes: 'Caller blocked and isolated at VoIP gateway.' })
