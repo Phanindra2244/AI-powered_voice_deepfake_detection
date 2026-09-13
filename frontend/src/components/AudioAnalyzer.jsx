@@ -3,12 +3,23 @@ import { Mic, Square, Upload, Play, Pause, AlertTriangle, ShieldCheck, ShieldAle
 import SpectrogramCanvas from './SpectrogramCanvas';
 import { safeFetch } from '../services/api';
 
+const getAudioQuality = (result) =>
+  result?.audioQuality || result?.audio_quality || result?.noiseAnalysis || result?.noise || null;
+
+const getMetric = (result, names) => {
+  const q = getAudioQuality(result);
+  for (const name of names) {
+    if (q?.[name] != null) return q[name];
+  }
+  return null;
+};
+
 export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
   const [mode, setMode] = useState('upload'); // 'upload' | 'live'
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [analyserNode, setAnalyserNode] = useState(null);
-  
+
   const [selectedFile, setSelectedFile] = useState(null);
   const [audioUrl, setAudioUrl] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -36,7 +47,7 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
         const parsed = JSON.parse(saved);
         return parsed ? parsed.selectedSegment : null;
       }
-    } catch (e) {}
+    } catch (e) { }
     return null;
   });
 
@@ -47,7 +58,7 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
         const parsed = JSON.parse(saved);
         return parsed ? parsed.selectedFileName : null;
       }
-    } catch (e) {}
+    } catch (e) { }
     return null;
   });
 
@@ -60,7 +71,7 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
         const parsed = JSON.parse(saved);
         return parsed ? parsed.claimedSpeakerId || '' : '';
       }
-    } catch (e) {}
+    } catch (e) { }
     return '';
   });
 
@@ -98,7 +109,7 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
     setSavedFileName(null);
     try {
       localStorage.removeItem('voiceguard_latest_analysis_result');
-    } catch (e) {}
+    } catch (e) { }
   };
 
   useEffect(() => {
@@ -108,7 +119,7 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
           setSpeakersList(data.speakers);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -154,7 +165,7 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
             const formData = new FormData();
             formData.append('audio', currentBlob, 'realtime_chunk.wav');
             if (claimedSpeakerId) formData.append('claimedSpeakerId', claimedSpeakerId);
-            
+
             const chunkResult = await safeFetch(`${API_BASE}/analyze-voice`, { method: 'POST', body: formData });
             if (chunkResult.success) {
               setRealtimeMetrics({
@@ -164,7 +175,7 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
                 score: chunkResult.confidenceScore || Math.round(chunkResult.ai_probability * 100)
               });
             }
-          } catch (err) {}
+          } catch (err) { }
         }
       };
 
@@ -174,7 +185,7 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
         setSelectedFile(file);
         const url = URL.createObjectURL(audioBlob);
         setAudioUrl(url);
-        
+
         await runAnalysis(file);
       };
 
@@ -256,7 +267,7 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
 
   return (
     <div className="space-y-6">
-      
+
       {/* Top Cyberpunk Command Card */}
       <div className="cyber-panel p-6 backdrop-blur-xl bg-slate-900/70 border border-slate-800">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
@@ -274,18 +285,16 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
           <div className="flex items-center bg-slate-950 p-1.5 rounded-xl border border-slate-800 shadow-inner self-start lg:self-auto font-mono text-xs">
             <button
               onClick={() => setMode('upload')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                mode === 'upload' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.2)]' : 'text-slate-400 hover:text-slate-200'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${mode === 'upload' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.2)]' : 'text-slate-400 hover:text-slate-200'
+                }`}
             >
               <Upload className="w-3.5 h-3.5" />
               Upload Recording
             </button>
             <button
               onClick={() => setMode('live')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                mode === 'live' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.2)]' : 'text-slate-400 hover:text-slate-200'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-200 ${mode === 'live' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.2)]' : 'text-slate-400 hover:text-slate-200'
+                }`}
             >
               <Radio className="w-3.5 h-3.5 text-rose-400" />
               Live Microphone Stream
@@ -295,7 +304,7 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
 
         {/* Action Panel Controls */}
         <div className="pt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-          
+
           {mode === 'upload' ? (
             <div className="lg:col-span-8 flex flex-col sm:flex-row items-center gap-4">
               <label className="w-full sm:w-auto flex-1 cursor-pointer flex items-center justify-center gap-3 px-6 py-3.5 rounded-xl border-2 border-dashed border-slate-700 hover:border-cyan-400 bg-slate-950/80 hover:bg-slate-900 transition-all duration-200 group">
@@ -395,7 +404,7 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
               >
                 Demo Authentic
               </button>
-              
+
               <button
                 onClick={() => runAnalysis()}
                 disabled={analyzing || (!selectedFile && mode === 'upload')}
@@ -422,35 +431,50 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
 
       </div>
 
-      {/* Spectrogram & Visualizer Box */}
-      <div className="cyber-panel p-6 space-y-3 backdrop-blur-xl bg-slate-900/70 border border-slate-800">
+      {/* Audio Signal & Speech Quality */}
+      <div className="cyber-panel p-6 space-y-4 backdrop-blur-xl bg-slate-900/70 border border-slate-800">
         <div className="flex items-center justify-between font-mono">
           <h3 className="text-xs font-bold text-slate-200 uppercase tracking-widest flex items-center gap-2">
             <BarChart2 className="w-4 h-4 text-cyan-400" />
-            SPECTROGRAM & TEMPORAL ANOMALY HEATMAP
+            AUDIO SIGNAL & SPEECH QUALITY
           </h3>
           <span className="text-xs text-slate-400">
-            {analysisResult ? `Duration: ${analysisResult.duration}s • Click segments below` : 'Awaiting Audio Signal'}
+            {analysisResult ? `Duration: ${analysisResult.duration ?? '--'}s` : 'Awaiting Audio Signal'}
           </span>
         </div>
 
-        <SpectrogramCanvas
-          analyserNode={analyserNode}
-          isRecording={isRecording}
-          isPlaying={isPlaying}
-          segmentHeatmap={analysisResult?.segmentHeatmap || []}
-          activeSegmentId={selectedSegment?.id}
-          onSelectSegment={(seg) => setSelectedSegment(seg)}
-        />
+        {analysisResult ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 font-mono text-xs">
+            {[
+              ['Usable Speech', ['speechPercent', 'speech_percentage', 'speechPct'], 'text-cyan-300', '%'],
+              ['Background Noise', ['noisePercent', 'noise_percentage', 'noisePct'], 'text-amber-300', '%'],
+              ['Silence', ['silencePercent', 'silence_percentage', 'silencePct'], 'text-slate-300', '%'],
+              ['Noise Level', ['noiseLevel', 'noise_level'], 'text-purple-300', '']
+            ].map(([label, names, cls, suffix]) => {
+              const value = getMetric(analysisResult, names);
+              const display = value == null ? '--' : (Number.isFinite(Number(value)) ? Number(value).toFixed(1) : value);
+              return (
+                <div key={label} className="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                  <span className="text-[10px] text-slate-500 block uppercase">{label}</span>
+                  <span className={`text-lg font-bold ${cls}`}>{display}{value != null ? suffix : ''}</span>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="h-24 rounded-xl border border-dashed border-slate-800 flex items-center justify-center text-xs text-slate-500 font-mono">
+            Upload a recording or start the microphone to inspect the signal.
+          </div>
+        )}
       </div>
 
       {/* Analysis Results Grid */}
       {analysisResult && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
+
           {/* Verdict Badge & Progress Confidence Meter (5 Cols) */}
           <div className="lg:col-span-5 cyber-panel p-6 flex flex-col justify-between space-y-6 backdrop-blur-xl bg-slate-900/70 border border-slate-800">
-            
+
             <div>
               <span className="text-[11px] font-mono tracking-widest text-slate-400 uppercase">Analysis Verdict</span>
               <div className="mt-3 flex items-center gap-3">
@@ -471,10 +495,9 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
                 )}
 
                 <div>
-                  <h3 className={`text-xl font-bold tracking-tight ${
-                    analysisResult.verdict === 'DEEPFAKE' ? 'text-rose-400' :
+                  <h3 className={`text-xl font-bold tracking-tight ${analysisResult.verdict === 'DEEPFAKE' ? 'text-rose-400' :
                     analysisResult.verdict === 'AUTHENTIC' ? 'text-emerald-400' : 'text-amber-400'
-                  }`}>
+                    }`}>
                     {analysisResult.verdictText}
                   </h3>
                   <p className="text-xs font-mono text-slate-400">Case Ref: #{analysisResult.analysisId}</p>
@@ -486,18 +509,17 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
             <div className="bg-slate-950 p-5 rounded-2xl border border-slate-800/90 space-y-3 font-mono">
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400">SYNTHETIC DEEPFAKE CONFIDENCE</span>
-                <span className={`font-bold text-base ${analysisResult.confidenceScore >= 65 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                  {analysisResult.confidenceScore}%
+                <span className={`font-bold text-base ${(analysisResult.confidenceScore ?? 0) >= 65 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                  {analysisResult.confidenceScore != null ? `${analysisResult.confidenceScore}%` : '--'}%
                 </span>
               </div>
               <div className="w-full bg-slate-900 h-3.5 rounded-full overflow-hidden p-0.5 border border-slate-800">
                 <div
-                  className={`h-full rounded-full transition-all duration-1000 ${
-                    analysisResult.confidenceScore >= 65
-                      ? 'bg-gradient-to-r from-amber-500 to-rose-500 shadow-[0_0_15px_#f43f5e]'
-                      : 'bg-gradient-to-r from-cyan-500 to-emerald-500 shadow-[0_0_15px_#10b981]'
-                  }`}
-                  style={{ width: `${analysisResult.confidenceScore}%` }}
+                  className={`h-full rounded-full transition-all duration-1000 ${analysisResult.confidenceScore >= 65
+                    ? 'bg-gradient-to-r from-amber-500 to-rose-500 shadow-[0_0_15px_#f43f5e]'
+                    : 'bg-gradient-to-r from-cyan-500 to-emerald-500 shadow-[0_0_15px_#10b981]'
+                    }`}
+                  style={{ width: `${Math.max(0, Math.min(100, Number(analysisResult.confidenceScore) || 0))}%` }}
                 ></div>
               </div>
               <div className="flex justify-between text-[10px] text-slate-500">
@@ -517,13 +539,12 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
                   </span>
                 </div>
 
-                <div className={`p-3 rounded-xl border text-xs flex items-center gap-2.5 ${
-                  analysisResult.speakerVerification.severity === 'success'
-                    ? 'bg-emerald-950/40 border-emerald-800/80 text-emerald-300'
-                    : analysisResult.speakerVerification.severity === 'warning'
+                <div className={`p-3 rounded-xl border text-xs flex items-center gap-2.5 ${analysisResult.speakerVerification.severity === 'success'
+                  ? 'bg-emerald-950/40 border-emerald-800/80 text-emerald-300'
+                  : analysisResult.speakerVerification.severity === 'warning'
                     ? 'bg-amber-950/40 border-amber-800/80 text-amber-300'
                     : 'bg-rose-950/40 border-rose-800/80 text-rose-300'
-                }`}>
+                  }`}>
                   <ShieldCheck className="w-4 h-4 shrink-0" />
                   <div>
                     <span className="font-bold block text-xs">{analysisResult.speakerVerification.status_text}</span>
@@ -598,107 +619,134 @@ export default function AudioAnalyzer({ API_BASE, onNavigateToReport }) {
 
           </div>
 
-          {/* Segment Anomaly Explanation & Feature Metrics (7 Cols) */}
+          {/* Detector Details (7 Cols) */}
           <div className="lg:col-span-7 space-y-6">
-            
-            {/* Timestamp Callout */}
+
             <div className="cyber-panel p-6 backdrop-blur-xl bg-slate-900/70 border border-slate-800">
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
                 <h4 className="text-xs font-bold text-white font-mono uppercase tracking-widest flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-400" />
-                  TIMESTAMPED ANOMALY EXPLANATION
+                  <ShieldCheck className="w-4 h-4 text-cyan-400" />
+                  DETECTOR STATUS
                 </h4>
-                {selectedSegment && (
-                  <span className={`px-2.5 py-1 text-xs font-mono font-bold rounded-lg border ${
-                    selectedSegment.status === 'HIGH_RISK' ? 'bg-rose-950/60 text-rose-300 border-rose-800' :
-                    selectedSegment.status === 'SUSPICIOUS' ? 'bg-amber-950/60 text-amber-300 border-amber-800' : 'bg-emerald-950/60 text-emerald-300 border-emerald-800'
+                <span className={`px-2.5 py-1 text-[10px] font-mono font-bold rounded-lg border ${analysisResult.detector?.available === false
+                    ? 'bg-rose-950/60 text-rose-300 border-rose-800'
+                    : 'bg-emerald-950/60 text-emerald-300 border-emerald-800'
                   }`}>
-                    Segment {selectedSegment.startTime}s - {selectedSegment.endTime}s
-                  </span>
-                )}
+                  {analysisResult.detector?.available === false ? 'UNAVAILABLE' : 'ACTIVE'}
+                </span>
               </div>
 
-              {selectedSegment ? (
-                <div className="space-y-4 font-mono">
-                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                    <div className="flex items-center justify-between text-xs mb-2">
-                      <span className="text-slate-400">Flagged Segment Score:</span>
-                      <span className={`font-bold text-sm ${selectedSegment.score >= 65 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                        {selectedSegment.score}% Synthetic Anomaly
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-200 font-sans leading-relaxed">
-                      {selectedSegment.explanation || 'Natural human vocal envelope and smooth spectral harmonics observed throughout segment.'}
-                    </p>
-                  </div>
+              <div className="space-y-3 font-mono text-xs">
+                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                  <span className="text-slate-500 block text-[10px] uppercase">Model</span>
+                  <span className="text-cyan-300 font-bold break-all">
+                    {analysisResult.detector?.model || 'Wav2Vec2 Deepfake Voice Detector'}
+                  </span>
+                </div>
 
-                  <div className="grid grid-cols-3 gap-3 text-xs">
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-center">
-                      <span className="text-[10px] text-slate-400 block">Flatness</span>
-                      <span className="text-sm font-bold text-cyan-300">{selectedSegment.features?.spectralFlatness || '0.28'}</span>
-                    </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-center">
-                      <span className="text-[10px] text-slate-400 block">Pitch Jitter</span>
-                      <span className="text-sm font-bold text-purple-300">{selectedSegment.features?.pitchJitter || '0.024'}</span>
-                    </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 text-center">
-                      <span className="text-[10px] text-slate-400 block">Phase Glitch</span>
-                      <span className="text-sm font-bold text-amber-300">{selectedSegment.features?.phaseDiscontinuity || 'Low'}</span>
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <span className="text-slate-500 block text-[10px] uppercase">Noise in AI calculation</span>
+                    <span className="text-emerald-300 font-bold">
+                      {analysisResult.detector?.noiseExcludedFromDeepfakeCalculation === false ? 'INCLUDED' : 'EXCLUDED'}
+                    </span>
+                  </div>
+                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                    <span className="text-slate-500 block text-[10px] uppercase">Watermark</span>
+                    <span className="text-slate-200 font-bold">
+                      {analysisResult.watermark?.found ? 'Detected' : 'Not detected'}
+                    </span>
                   </div>
                 </div>
-              ) : (
-                <p className="text-xs text-slate-400 font-mono italic">Select a timestamp segment on the heatmap above to view acoustic evidence breakdown.</p>
+              </div>
+            </div>
+
+            <div className="cyber-panel p-6 backdrop-blur-xl bg-slate-900/70 border border-slate-800">
+              <h4 className="text-xs font-bold text-slate-200 font-mono uppercase tracking-widest mb-4">
+                MODEL PROBABILITIES
+              </h4>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-mono text-xs">
+                <div className="bg-slate-950 p-5 rounded-xl border border-rose-900/40">
+                  <span className="text-slate-500 block text-[10px] uppercase">Synthetic / AI</span>
+                  <span className="text-2xl font-bold text-rose-300">
+                    {analysisResult.probabilities?.fake != null
+                      ? `${(Number(analysisResult.probabilities.fake) * 100).toFixed(1)}%`
+                      : analysisResult.confidenceScore != null
+                        ? `${Number(analysisResult.confidenceScore).toFixed(1)}%`
+                        : '--'}
+                  </span>
+                </div>
+
+                <div className="bg-slate-950 p-5 rounded-xl border border-emerald-900/40">
+                  <span className="text-slate-500 block text-[10px] uppercase">Human / Real</span>
+                  <span className="text-2xl font-bold text-emerald-300">
+                    {analysisResult.probabilities?.real != null
+                      ? `${(Number(analysisResult.probabilities.real) * 100).toFixed(1)}%`
+                      : analysisResult.authenticityScore != null
+                        ? `${Number(analysisResult.authenticityScore).toFixed(1)}%`
+                        : '--'}
+                  </span>
+                </div>
+              </div>
+
+              {analysisResult.verdict === 'INSUFFICIENT_SPEECH' && (
+                <div className="mt-4 p-4 rounded-xl bg-amber-950/40 border border-amber-800/60 text-amber-200 text-xs font-mono">
+                  <strong>Analysis not completed:</strong> there was not enough usable speech for a reliable model decision.
+                </div>
+              )}
+
+              {analysisResult.verdict === 'UNAVAILABLE' && (
+                <div className="mt-4 p-4 rounded-xl bg-rose-950/40 border border-rose-800/60 text-rose-200 text-xs font-mono">
+                  <strong>Detector unavailable:</strong> no Real/Fake decision was generated.
+                </div>
               )}
             </div>
 
-            {/* Global Acoustic Features Matrix */}
             <div className="cyber-panel p-6 backdrop-blur-xl bg-slate-900/70 border border-slate-800">
-              <h4 className="text-xs font-bold text-slate-200 font-mono uppercase tracking-widest mb-4">ACOUSTIC SPECTRAL EVIDENCE METRICS</h4>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex justify-between items-center">
-                  <div>
-                    <span className="text-slate-400 block text-[11px]">High Frequency Cutoff</span>
-                    <span className="text-slate-300 text-[10px]">Vocoder brickwall limit</span>
-                  </div>
-                  <span className={`font-bold text-sm ${analysisResult.acousticMetrics.highFreqCutoffKHz < 16 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                    {analysisResult.acousticMetrics.highFreqCutoffKHz} kHz
-                  </span>
-                </div>
-
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex justify-between items-center">
-                  <div>
-                    <span className="text-slate-400 block text-[11px]">Phase Coherence Index</span>
-                    <span className="text-slate-300 text-[10px]">Harmonic continuity</span>
-                  </div>
-                  <span className="font-bold text-sm text-cyan-300">
-                    {analysisResult.acousticMetrics.phaseCoherenceIndex} / 100
-                  </span>
-                </div>
-
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex justify-between items-center">
-                  <div>
-                    <span className="text-slate-400 block text-[11px]">Pitch Jitter Variance</span>
-                    <span className="text-slate-300 text-[10px]">Micro vocal shimmer</span>
-                  </div>
-                  <span className="font-bold text-sm text-purple-300">
-                    {analysisResult.acousticMetrics.pitchJitterPercent}%
-                  </span>
-                </div>
-
-                <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex justify-between items-center">
-                  <div>
-                    <span className="text-slate-400 block text-[11px]">Digital Watermark Scan</span>
-                    <span className="text-slate-300 text-[10px]">TRUETONE signature</span>
-                  </div>
-                  <span className={`font-bold text-[10px] px-2 py-0.5 rounded border ${
-                    analysisResult.watermark?.found ? 'bg-rose-950/80 text-rose-300 border-rose-800' : 'bg-slate-900 text-slate-400 border-slate-800'
-                  }`}>
-                    {analysisResult.watermark?.found ? 'WATERMARKED SYNTHETIC' : 'NONE DETECTED'}
-                  </span>
-                </div>
+              <h4 className="text-xs font-bold text-slate-200 font-mono uppercase tracking-widest mb-4">
+                AUDIO QUALITY
+              </h4>
+              <div className="grid grid-cols-2 gap-4 text-xs font-mono">
+                {[
+                  ['Usable speech', ['speechPercent', 'speech_percentage', 'speechPct']],
+                  ['Background noise', ['noisePercent', 'noise_percentage', 'noisePct']],
+                  ['Silence', ['silencePercent', 'silence_percentage', 'silencePct']],
+                  ['Usable speech duration', ['usableSpeechDuration', 'usable_speech_duration']]
+                ].map(([label, names]) => {
+                  const value = getMetric(analysisResult, names);
+                  const isDuration = label.includes('duration');
+                  return (
+                    <div key={label} className="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                      <span className="text-slate-500 block text-[10px] uppercase">{label}</span>
+                      <span className="text-cyan-300 text-xl font-bold">
+                        {value == null ? '--' : `${Number(value).toFixed(1)}${isDuration ? 's' : '%'}`}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
+              <div className="mt-4 pt-3 border-t border-slate-800 text-[10px] text-emerald-300 font-mono">
+                Background noise and silence are reported separately and excluded from the deepfake calculation.
+              </div>
+            </div>
+
+            <div className="cyber-panel p-6 backdrop-blur-xl bg-slate-900/70 border border-slate-800">
+              <h4 className="text-xs font-bold text-slate-200 font-mono uppercase tracking-widest mb-4">
+                WATERMARK VERIFICATION
+              </h4>
+              <div className="flex items-center justify-between bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono text-xs">
+                <span className="text-slate-400">TRUETONE signature</span>
+                <span className={`font-bold px-2 py-1 rounded border ${analysisResult.watermark?.found
+                    ? 'bg-rose-950/80 text-rose-300 border-rose-800'
+                    : 'bg-slate-900 text-slate-400 border-slate-800'
+                  }`}>
+                  {analysisResult.watermark?.found ? 'DETECTED' : 'NOT DETECTED'}
+                </span>
+              </div>
+              <p className="text-[10px] text-slate-500 mt-3 font-mono">
+                Watermark status is an independent verification signal and is not added to the model probability.
+              </p>
             </div>
 
           </div>
