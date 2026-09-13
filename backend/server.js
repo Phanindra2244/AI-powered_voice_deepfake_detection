@@ -46,13 +46,9 @@ app.get('*', (req, res) => {
   });
 });
 
-if (process.env.VERCEL !== '1') {
-  app.listen(PORT, () => {
-    console.log(`====================================================`);
-    console.log(`🛡️ TRUETONE AI SECURITY BACKEND RUNNING ON PORT ${PORT}`);
-    console.log(`📡 API Endpoints: http://localhost:${PORT}/api/health`);
-    console.log(`====================================================`);
-  });
-}
-
-export default app;
+app.listen(PORT, () => {
+  console.log(`====================================================`);
+  console.log(`🛡️ TRUETONE AI SECURITY BACKEND RUNNING ON PORT ${PORT}`);
+  console.log(`📡 API Endpoints: http://localhost:${PORT}/api/health`);
+  console.log(`====================================================`);
+});
