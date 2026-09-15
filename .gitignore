@@ -1,5 +1,12 @@
 .vercel
 
+# Local secrets and generated data
+backend/.env
+backend/__pycache__/
+backend/*.db
+backend/*.sqlite
+backend/data/*.db
+
 # Playwright
 node_modules/
 /test-results/
